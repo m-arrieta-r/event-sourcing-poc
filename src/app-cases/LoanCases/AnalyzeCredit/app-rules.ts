@@ -1,28 +1,18 @@
-import { Result, success, failure } from '../../../shared/result';
-import { evaluateProposal } from '../../../domain/LoanProposal';
-import { LoanProposal } from '../../../domain/LoanProposal/types';
+import { Result } from '../../../shared/result';
+import { processEvaluateLoan, EvaluateLoanCommand } from '../../../domain/LoanProposal';
+import { LoanProposalRepository } from '../../../domain/LoanProposal/repository';
 
-export type GetProposalFn = (id: string) => Promise<Result<LoanProposal, string>>;
-export type UpdateProposalFn = (proposal: LoanProposal) => Promise<Result<void, string>>;
-
-export const analyzeCreditProcess = (getProposal: GetProposalFn, updateProposal: UpdateProposalFn) => 
-  async (proposalId: string): Promise<Result<LoanProposal, string>> => {
-    // 1. Fetch proposal
-    const proposalResult = await getProposal(proposalId);
-    if (!proposalResult.isSuccess) {
-        return proposalResult;
-    }
+export const analyzeCreditProcess = (repo: LoanProposalRepository) => 
+  async (proposalId: string): Promise<Result<void, string>> => {
     
-    let proposal = proposalResult.value;
+    // Build Command
+    const command: EvaluateLoanCommand = {
+      name: 'EvaluateLoan',
+      payload: {
+        loanId: proposalId
+      }
+    };
 
-    // 2. Business Rules Evaluation
-    proposal = evaluateProposal(proposal);
-
-    // 3. Persist state change
-    const updateResult = await updateProposal(proposal);
-    if (!updateResult.isSuccess) {
-        return failure(`Failed to update proposal status: ${updateResult.error}`);
-    }
-
-    return success(proposal);
+    // Use the repository to load state, evaluate command, and append events
+    return repo.execute(proposalId, (state) => processEvaluateLoan(command, state));
   };

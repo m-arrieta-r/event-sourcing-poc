@@ -14,4 +14,5 @@ export type LoanProposal = {
   installments: number;
   status: LoanStatus;
   createdAt: Date;
+  version: number;
 };

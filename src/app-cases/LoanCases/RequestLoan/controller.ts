@@ -1,26 +1,25 @@
-import { requestLoanProcess, SaveProposalFn } from './app-rules';
-import { success, failure, Result } from '../../../shared/result';
+import { requestLoanProcess } from './app-rules';
+import { failure, Result } from '../../../shared/result';
+import { EventStore } from '../../../shared/EventStore';
+import { createLoanProposalRepository } from '../../../domain/LoanProposal';
 
-// Mock dependency implementation
-const mockSaveProposal: SaveProposalFn = async (proposal) => {
-  // In a real app, this calls a Database Repository
-  console.log('Proposal saved to DB:', proposal);
-  return success(undefined);
-};
+// In a real application, the EventStore instance is generally passed down from an IoC container
+export const createRequestLoanController = (eventStore: EventStore) => {
+  const repo = createLoanProposalRepository(eventStore);
+  const handleRequestLoan = requestLoanProcess(repo);
 
-// Controller injects the dependencies 
-const handleRequestLoan = requestLoanProcess(mockSaveProposal);
+  const httpPostRequestLoan = async (reqBody: any): Promise<Result<any, string>> => {
+    try {
+      if (!reqBody.customer || !reqBody.requestedAmount || !reqBody.installments) {
+        return failure('Invalid request structure');
+      }
 
-export const httpPostRequestLoan = async (reqBody: any): Promise<Result<any, string>> => {
-  try {
-    // Basic structural validation
-    if (!reqBody.customer || !reqBody.requestedAmount || !reqBody.installments) {
-      return failure('Invalid request structure');
+      const result = await handleRequestLoan(reqBody);
+      return result;
+    } catch (error) {
+      return failure('Internal Server Error');
     }
+  };
 
-    const result = await handleRequestLoan(reqBody);
-    return result;
-  } catch (error) {
-    return failure('Internal Server Error');
-  }
+  return { httpPostRequestLoan };
 };

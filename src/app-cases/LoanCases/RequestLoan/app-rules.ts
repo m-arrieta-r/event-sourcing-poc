@@ -1,9 +1,7 @@
-import { Result, success, failure } from '../../../shared/result';
-import { createInitialProposal } from '../../../domain/LoanProposal';
-import { CustomerInfo, LoanProposal } from '../../../domain/LoanProposal/types';
-
-// Dependencies injected as pure functions
-export type SaveProposalFn = (proposal: LoanProposal) => Promise<Result<void, string>>;
+import { Result } from '../../../shared/result';
+import { processRequestLoan, RequestLoanCommand } from '../../../domain/LoanProposal';
+import { CustomerInfo } from '../../../domain/LoanProposal/types';
+import { LoanProposalRepository } from '../../../domain/LoanProposal/repository';
 
 export type RequestLoanInput = {
   customer: CustomerInfo;
@@ -11,22 +9,21 @@ export type RequestLoanInput = {
   installments: number;
 };
 
-// Use case logic curried with dependencies
-export const requestLoanProcess = (saveProposal: SaveProposalFn) => 
-  async (input: RequestLoanInput): Promise<Result<LoanProposal, string>> => {
-    // 1. Domain validation
-    const proposalResult = createInitialProposal(input.customer, input.requestedAmount, input.installments);
-    if (!proposalResult.isSuccess) {
-      return proposalResult;
-    }
+// Use case logic curried with the repo dependency
+export const requestLoanProcess = (repo: LoanProposalRepository) => 
+  async (input: RequestLoanInput): Promise<Result<void, string>> => {
+    
+    // 1. Build the command
+    const command: RequestLoanCommand = {
+      name: 'RequestLoan',
+      payload: {
+        customer: input.customer,
+        requestedAmount: input.requestedAmount,
+        installments: input.installments
+      }
+    };
 
-    const proposal = proposalResult.value;
-
-    // 2. Persist proposal
-    const saved = await saveProposal(proposal);
-    if (!saved.isSuccess) {
-      return failure(`Failed to save proposal: ${saved.error}`);
-    }
-
-    return success(proposal);
+    // 2. Use the repo to validate against state and append new events.
+    // Pass `null` for id since this is a creation command.
+    return repo.execute(null, (state) => processRequestLoan(command, state));
   };
