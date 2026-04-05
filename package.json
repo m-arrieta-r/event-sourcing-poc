@@ -2,6 +2,7 @@
   "name": "lending-origination",
   "version": "1.0.0",
   "description": "Simple lending origination following app-cases structure",
+  "license": "MIT",
   "main": "dist/index.js",
   "scripts": {
     "start": "tsx src/main.ts",
