@@ -1,14 +1,11 @@
-import { Result, success, failure } from '../../../shared/result';
-import { EvaluateLoanCommand } from '../commands';
-import { LoanProposalEvent, LoanApprovedEvent, LoanRejectedEvent } from '../events';
-import { LoanProposalState } from '../aggregate';
-import { isIncomeSufficient } from '../internal/isIncomeSufficient';
+import { Result, success, failure } from '../../../../shared/result';
+import { Command } from './command';
+import { LoanProposalEvent, LoanApprovedEvent, LoanRejectedEvent } from '../../events';
+import { LoanProposalState } from '../../aggregate';
+import { isIncomeSufficient } from '../../internal/isIncomeSufficient';
 
-/**
- * processEvaluateLoan calculates facts for a requested EvaluateLoan command.
- */
-export const processEvaluateLoan = (
-  command: EvaluateLoanCommand,
+export const decide = (
+  _command: Command,
   state: LoanProposalState
 ): Result<LoanProposalEvent[], string> => {
   if (state === null) {

@@ -1,7 +1,5 @@
 import { Result } from '../../../shared/result';
-import { processRequestLoan, RequestLoanCommand } from '../../../domain/LoanProposal';
-import { CustomerInfo } from '../../../domain/LoanProposal/types';
-import { LoanProposalRepository } from '../../../domain/LoanProposal/repository';
+import { RequestLoan, CustomerInfo, LoanProposalRepository } from '../../../domain/LoanProposal';
 
 export type RequestLoanInput = {
   customer: CustomerInfo;
@@ -14,7 +12,7 @@ export const requestLoanProcess = (repo: LoanProposalRepository) =>
   async (input: RequestLoanInput): Promise<Result<void, string>> => {
     
     // 1. Build the command
-    const command: RequestLoanCommand = {
+    const command: RequestLoan.Command = {
       name: 'RequestLoan',
       payload: {
         customer: input.customer,
@@ -25,5 +23,5 @@ export const requestLoanProcess = (repo: LoanProposalRepository) =>
 
     // 2. Use the repo to validate against state and append new events.
     // Pass `null` for id since this is a creation command.
-    return repo.execute(null, (state) => processRequestLoan(command, state));
+    return repo.execute(null, (state) => RequestLoan.decide(command, state));
   };

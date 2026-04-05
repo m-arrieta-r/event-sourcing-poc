@@ -1,16 +1,12 @@
 import { randomUUID } from 'crypto';
-import { Result, success, failure } from '../../../shared/result';
-import { RequestLoanCommand } from '../commands';
-import { LoanProposalEvent, LoanRequestedEvent } from '../events';
-import { LoanProposalState } from '../aggregate';
-import { isAmountValid } from '../internal/isAmountValid';
+import { Result, success, failure } from '../../../../shared/result';
+import { Command } from './command';
+import { LoanProposalEvent, LoanRequestedEvent } from '../../events';
+import { LoanProposalState } from '../../aggregate';
+import { isAmountValid } from '../../internal/isAmountValid';
 
-/**
- * processRequestLoan takes the RequestLoan command and current state,
- * runs specific business rules, and returns Domain Events.
- */
-export const processRequestLoan = (
-  command: RequestLoanCommand,
+export const decide = (
+  command: Command,
   state: LoanProposalState
 ): Result<LoanProposalEvent[], string> => {
   if (state !== null) {

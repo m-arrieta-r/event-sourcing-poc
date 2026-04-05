@@ -1,7 +1,12 @@
 import { LoanProposalEvent } from './events';
 import { LoanProposal } from './types';
-import { reducers } from './reducers';
+import { evolvers as requestEvolvers } from './features/RequestLoan/evolve';
+import { evolvers as evaluateEvolvers } from './features/EvaluateLoan/evolve';
 
+const reducers: Record<
+  LoanProposalEvent['name'],
+  (state: LoanProposalState, event: any) => LoanProposalState
+> = { ...requestEvolvers, ...evaluateEvolvers };
 // The state could be null if the aggregate hasn't been created yet
 export type LoanProposalState = LoanProposal | null;
 

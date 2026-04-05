@@ -1,6 +1,7 @@
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { createSqliteEventStore } from './infra/EventStore';
+import { createLoanProposalRepository } from './infra/LoanProposalRepository';
 import { createRequestLoanController } from './app-cases/LoanCases/RequestLoan/controller';
 import { createAnalyzeCreditController } from './app-cases/LoanCases/AnalyzeCredit/controller';
 import { createListLoansController } from './app-cases/LoanCases/ListLoans/controller';
@@ -10,11 +11,15 @@ async function bootstrap() {
 
   // Initialize persistent SQLite-backed EventStore
   const eventStore = await createSqliteEventStore('./events.db');
+  
+  // Initialize Domain Repository
+  const loanProposalRepo = createLoanProposalRepository(eventStore);
 
-  // Initialize Controllers with EventStore injected
-  const { httpPostRequestLoan } = createRequestLoanController(eventStore);
-  const { httpPostAnalyzeCredit } = createAnalyzeCreditController(eventStore);
-  const { httpGetListLoans } = createListLoansController(eventStore);
+  // Initialize Controllers with Repository injected
+  const { httpPostRequestLoan } = createRequestLoanController(loanProposalRepo);
+  const { httpPostAnalyzeCredit } = createAnalyzeCreditController(loanProposalRepo);
+  const { httpGetListLoans } = createListLoansController(loanProposalRepo);
+
 
   const app = new Hono();
 

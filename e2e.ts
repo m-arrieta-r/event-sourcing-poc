@@ -13,7 +13,7 @@ async function runTests() {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      customer: { id: "c1", name: "Alice", cpf: "123", monthlyIncome: 5000 },
+      customer: { id: "c1", name: "Alice", cpf: "12345678901", monthlyIncome: 5000 },
       requestedAmount: 1000,
       installments: 10
     })

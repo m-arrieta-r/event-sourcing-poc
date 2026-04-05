@@ -1,11 +1,10 @@
 import { Context } from 'hono';
 import { listLoansProcess } from './app-rules';
-import { EventStore } from '../../../shared/EventStore';
-import { createLoanProposalRepository } from '../../../domain/LoanProposal';
+import { LoanProposalRepository } from '../../../domain/LoanProposal';
 
-export const createListLoansController = (eventStore: EventStore) => {
-  const repo = createLoanProposalRepository(eventStore);
+export const createListLoansController = (repo: LoanProposalRepository) => {
   const handleListLoans = listLoansProcess(repo);
+
 
   const httpGetListLoans = async (c: Context) => {
     try {
