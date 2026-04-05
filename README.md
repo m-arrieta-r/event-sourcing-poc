@@ -20,7 +20,7 @@ This repository is a Proof of Concept (POC) for a lending platform inspired by m
 
 ## 🏗 Architecture
 
-The project strictly adheres to the patterns defined in the **[backend-skeleton](https://github.com/miarrietar/backend-skeleton)**:
+The project strictly adheres to the patterns defined in the **[backend-skeleton](https://github.com/m-arrieta-r/backend-skeleton)**:
 
 - **Domain Layer:** Pure business logic (`decide` for commands, `evolve` for state transitions).
 - **Application Cases:** Orchestration of domain rules and persistence.
