@@ -5,10 +5,12 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
-    "dev": "tsc --watch"
+    "dev": "tsc --watch",
+    "test:e2e": "tsx e2e.ts"
   },
   "devDependencies": {
     "@types/sqlite3": "^3.1.11",
+    "tsx": "^4.21.0",
     "typescript": "^5.0.0"
   },
   "dependencies": {
