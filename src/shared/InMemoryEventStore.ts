@@ -17,6 +17,10 @@ export const createInMemoryEventStore = (): EventStore => {
     loadEvents: async (aggregateId: string): Promise<DomainEvent<any, any>[]> => {
       // Returns a shallow copy to prevent external mutation of the internal store array
       return [...(eventsStore[aggregateId] || [])];
+    },
+
+    getAllAggregateIds: async (): Promise<string[]> => {
+      return Object.keys(eventsStore);
     }
   };
 };

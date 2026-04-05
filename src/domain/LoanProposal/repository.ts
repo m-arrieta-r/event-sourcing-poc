@@ -5,6 +5,7 @@ import { LoanProposalState, apply } from './aggregate';
 
 export type LoanProposalRepository = {
   load: (id: string) => Promise<LoanProposalState>;
+  loadAll: () => Promise<LoanProposalState[]>;
   execute: (
     id: string | null,
     process: (state: LoanProposalState) => Result<LoanProposalEvent[], string>
@@ -18,6 +19,12 @@ export const createLoanProposalRepository = (eventStore: EventStore): LoanPropos
     const events = (await eventStore.loadEvents(id)) as LoanProposalEvent[];
     if (events.length === 0) return null;
     return events.reduce(apply, null);
+  };
+
+  const loadAll = async (): Promise<LoanProposalState[]> => {
+    const ids = await eventStore.getAllAggregateIds();
+    const proposals = await Promise.all(ids.map(id => load(id)));
+    return proposals.filter((p): p is NonNullable<typeof p> => p !== null);
   };
 
   const execute = async (
@@ -44,5 +51,5 @@ export const createLoanProposalRepository = (eventStore: EventStore): LoanPropos
     return failure(result.error);
   };
 
-  return { load, execute };
+  return { load, loadAll, execute };
 };

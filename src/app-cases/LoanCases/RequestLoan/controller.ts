@@ -1,23 +1,27 @@
+import { Context } from 'hono';
 import { requestLoanProcess } from './app-rules';
-import { failure, Result } from '../../../shared/result';
 import { EventStore } from '../../../shared/EventStore';
 import { createLoanProposalRepository } from '../../../domain/LoanProposal';
 
-// In a real application, the EventStore instance is generally passed down from an IoC container
 export const createRequestLoanController = (eventStore: EventStore) => {
   const repo = createLoanProposalRepository(eventStore);
   const handleRequestLoan = requestLoanProcess(repo);
 
-  const httpPostRequestLoan = async (reqBody: any): Promise<Result<any, string>> => {
+  const httpPostRequestLoan = async (c: Context) => {
     try {
+      const reqBody = await c.req.json();
       if (!reqBody.customer || !reqBody.requestedAmount || !reqBody.installments) {
-        return failure('Invalid request structure');
+        return c.json({ success: false, error: 'Invalid request structure' }, 400);
       }
 
       const result = await handleRequestLoan(reqBody);
-      return result;
+      
+      if (result.isSuccess) {
+        return c.json({ success: true, message: 'Loan requested successfully' }, 201);
+      }
+      return c.json({ success: false, error: result.error }, 400);
     } catch (error) {
-      return failure('Internal Server Error');
+      return c.json({ success: false, error: 'Invalid JSON payload' }, 400);
     }
   };
 

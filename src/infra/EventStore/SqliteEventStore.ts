@@ -74,4 +74,11 @@ export class SqliteEventStore implements EventStore {
       payload: JSON.parse(row.payload)
     }));
   }
+
+  async getAllAggregateIds(): Promise<string[]> {
+    if (!this.db) throw new Error('Database not initialized. Call init() first.');
+
+    const rows = await this.db.all('SELECT DISTINCT aggregate_id FROM journal');
+    return rows.map(row => row.aggregate_id);
+  }
 }
