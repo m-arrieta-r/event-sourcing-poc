@@ -1,21 +1,30 @@
 import { Context } from 'hono';
 import { requestLoanProcess } from './app-rules';
-import { EventStore } from '../../../shared/EventStore';
-import { createLoanProposalRepository } from '../../../domain/LoanProposal';
+import { LoanProposalRepository, parseCustomerInfo } from '../../../domain/LoanProposal';
 
-export const createRequestLoanController = (eventStore: EventStore) => {
-  const repo = createLoanProposalRepository(eventStore);
+export const createRequestLoanController = (repo: LoanProposalRepository) => {
   const handleRequestLoan = requestLoanProcess(repo);
 
   const httpPostRequestLoan = async (c: Context) => {
     try {
       const reqBody = await c.req.json();
-      if (!reqBody.customer || !reqBody.requestedAmount || !reqBody.installments) {
-        return c.json({ success: false, error: 'Invalid request structure' }, 400);
+
+      // Validate and parse CustomerInfo through the domain smart constructor
+      const customerResult = parseCustomerInfo(reqBody.customer);
+      if (!customerResult.isSuccess) {
+        return c.json({ success: false, error: customerResult.error }, 400);
       }
 
-      const result = await handleRequestLoan(reqBody);
-      
+      if (typeof reqBody.requestedAmount !== 'number' || typeof reqBody.installments !== 'number') {
+        return c.json({ success: false, error: 'requestedAmount and installments must be numbers' }, 400);
+      }
+
+      const result = await handleRequestLoan({
+        customer: customerResult.value,
+        requestedAmount: reqBody.requestedAmount,
+        installments: reqBody.installments,
+      });
+
       if (result.isSuccess) {
         return c.json({ success: true, message: 'Loan requested successfully' }, 201);
       }
