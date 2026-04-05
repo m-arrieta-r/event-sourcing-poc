@@ -8,7 +8,7 @@ export const onLoanApproved = (
   if (state === null) return null; // Defensive check
   return {
     ...state,
-    status: event.payload.status,
+    status: 'APPROVED',
     version: event.version
   };
 };

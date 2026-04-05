@@ -1,14 +1,15 @@
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
-import { createInMemoryEventStore } from './shared/InMemoryEventStore';
+import { createSqliteEventStore } from './infra/EventStore';
 import { createRequestLoanController } from './app-cases/LoanCases/RequestLoan/controller';
 import { createAnalyzeCreditController } from './app-cases/LoanCases/AnalyzeCredit/controller';
 import { createListLoansController } from './app-cases/LoanCases/ListLoans/controller';
 
 async function bootstrap() {
   console.log('--- Initializing Event Sourced application ---');
-  // Initialize the global EventStore instance (in-memory POC)
-  const eventStore = createInMemoryEventStore();
+
+  // Initialize persistent SQLite-backed EventStore
+  const eventStore = await createSqliteEventStore('./events.db');
 
   // Initialize Controllers with EventStore injected
   const { httpPostRequestLoan } = createRequestLoanController(eventStore);
@@ -26,7 +27,7 @@ async function bootstrap() {
   app.get('/loans', httpGetListLoans);
 
   const port = 3000;
-  console.log(`Server is running heavily event-sourced on port ${port}`);
+  console.log(`Server is running on port ${port}`);
 
   serve({
     fetch: app.fetch,

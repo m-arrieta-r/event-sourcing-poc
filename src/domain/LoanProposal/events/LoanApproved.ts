@@ -1,8 +1,5 @@
 import { DomainEvent } from '../../../shared/message';
-import { LoanStatus } from '../types';
 
-export type LoanApprovedPayload = {
-  status: LoanStatus;
-};
+export type LoanApprovedPayload = Record<string, never>;
 
 export type LoanApprovedEvent = DomainEvent<'LoanApproved', LoanApprovedPayload>;

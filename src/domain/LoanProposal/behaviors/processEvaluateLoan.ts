@@ -30,7 +30,7 @@ export const processEvaluateLoan = (
       aggregateId: state.id,
       version: state.version + 1,
       timestamp: new Date(),
-      payload: { status: 'APPROVED' }
+      payload: {}
     };
     return success([approvedEvent]);
   } else {
@@ -39,7 +39,7 @@ export const processEvaluateLoan = (
       aggregateId: state.id,
       version: state.version + 1,
       timestamp: new Date(),
-      payload: { status: 'REJECTED' }
+      payload: {}
     };
     return success([rejectedEvent]);
   }

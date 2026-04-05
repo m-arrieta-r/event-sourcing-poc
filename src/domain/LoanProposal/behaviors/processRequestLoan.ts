@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { Result, success, failure } from '../../../shared/result';
 import { RequestLoanCommand } from '../commands';
 import { LoanProposalEvent, LoanRequestedEvent } from '../events';
@@ -21,14 +22,13 @@ export const processRequestLoan = (
   
   const event: LoanRequestedEvent = {
     name: 'LoanRequested',
-    aggregateId: `loan-${Date.now()}`, // Temporary ID generation
+    aggregateId: `loan-${randomUUID()}`,
     version: 1,
     timestamp: new Date(),
     payload: {
       customer: command.payload.customer,
       requestedAmount: command.payload.requestedAmount,
       installments: command.payload.installments,
-      status: 'PENDING'
     }
   };
   return success([event]);

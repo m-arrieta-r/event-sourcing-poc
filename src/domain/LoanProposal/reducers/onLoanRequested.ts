@@ -10,7 +10,7 @@ export const onLoanRequested = (
     customer: event.payload.customer,
     requestedAmount: event.payload.requestedAmount,
     installments: event.payload.installments,
-    status: event.payload.status,
+    status: 'PENDING',
     createdAt: event.timestamp,
     version: event.version,
   };

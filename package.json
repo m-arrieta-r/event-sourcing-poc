@@ -4,8 +4,9 @@
   "description": "Simple lending origination following app-cases structure",
   "main": "dist/index.js",
   "scripts": {
+    "start": "tsx src/main.ts",
+    "dev": "tsx watch src/main.ts",
     "build": "tsc",
-    "dev": "tsc --watch",
     "test:e2e": "tsx e2e.ts"
   },
   "devDependencies": {

@@ -8,9 +8,7 @@ export const analyzeCreditProcess = (repo: LoanProposalRepository) =>
     // Build Command
     const command: EvaluateLoanCommand = {
       name: 'EvaluateLoan',
-      payload: {
-        loanId: proposalId
-      }
+      payload: {}
     };
 
     // Use the repository to load state, evaluate command, and append events
