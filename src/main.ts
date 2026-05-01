@@ -5,6 +5,7 @@ import { createLoanProposalRepository } from './infra/LoanProposalRepository';
 import { createRequestLoanController } from './app-cases/LoanCases/RequestLoan/controller';
 import { createAnalyzeCreditController } from './app-cases/LoanCases/AnalyzeCredit/controller';
 import { createListLoansController } from './app-cases/LoanCases/ListLoans/controller';
+import { createCancelLoanController } from './app-cases/LoanCases/CancelLoan/controller';
 
 async function bootstrap() {
   console.log('--- Initializing Event Sourced application ---');
@@ -19,7 +20,7 @@ async function bootstrap() {
   const { httpPostRequestLoan } = createRequestLoanController(loanProposalRepo);
   const { httpPostAnalyzeCredit } = createAnalyzeCreditController(loanProposalRepo);
   const { httpGetListLoans } = createListLoansController(loanProposalRepo);
-
+  const { httpPostCancelLoan } = createCancelLoanController(loanProposalRepo);
 
   const app = new Hono();
 
@@ -30,6 +31,7 @@ async function bootstrap() {
   app.post('/request-loan', httpPostRequestLoan);
   app.post('/analyze-credit', httpPostAnalyzeCredit);
   app.get('/loans', httpGetListLoans);
+  app.post('/cancel-loan', httpPostCancelLoan);
 
   const port = 3000;
   console.log(`Server is running on port ${port}`);

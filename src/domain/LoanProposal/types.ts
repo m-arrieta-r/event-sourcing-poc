@@ -5,7 +5,7 @@ export type CustomerInfo = {
   monthlyIncome: number;
 };
 
-export type LoanStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+export type LoanStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
 
 export type LoanProposal = {
   id: string;
