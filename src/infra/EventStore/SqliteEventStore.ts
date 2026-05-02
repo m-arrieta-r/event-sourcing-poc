@@ -2,6 +2,7 @@ import sqlite3 from 'sqlite3';
 import { open } from 'sqlite';
 import { EventStore } from '../../shared/EventStore';
 import { DomainEvent } from '../../shared/message';
+import { VersionConflictError } from '../../shared/errors';
 
 export const createSqliteEventStore = async (dbFilePath: string = './events.db'): Promise<EventStore> => {
   const db = await open({
@@ -13,11 +14,13 @@ export const createSqliteEventStore = async (dbFilePath: string = './events.db')
   // Two concurrent appends for the same version will cause a unique constraint violation.
   await db.exec(`
     CREATE TABLE IF NOT EXISTS journal (
-      aggregate_id TEXT NOT NULL,
-      version      INTEGER NOT NULL,
-      name         TEXT NOT NULL,
-      timestamp    TEXT NOT NULL,
-      payload      TEXT NOT NULL,
+      aggregate_id   TEXT NOT NULL,
+      version        INTEGER NOT NULL,
+      name           TEXT NOT NULL,
+      timestamp      TEXT NOT NULL,
+      payload        TEXT NOT NULL,
+      correlation_id TEXT,
+      causation_id   TEXT,
       PRIMARY KEY (aggregate_id, version)
     );
   `);
@@ -28,7 +31,7 @@ export const createSqliteEventStore = async (dbFilePath: string = './events.db')
     await db.exec('BEGIN TRANSACTION');
     try {
       const stmt = await db.prepare(
-        'INSERT INTO journal (aggregate_id, version, name, timestamp, payload) VALUES (?, ?, ?, ?, ?)'
+        'INSERT INTO journal (aggregate_id, version, name, timestamp, payload, correlation_id, causation_id) VALUES (?, ?, ?, ?, ?, ?, ?)'
       );
       for (const event of events) {
         await stmt.run(
@@ -36,13 +39,18 @@ export const createSqliteEventStore = async (dbFilePath: string = './events.db')
           event.version,
           event.name,
           event.timestamp.toISOString(),
-          JSON.stringify(event.payload)
+          JSON.stringify(event.payload),
+          event.correlationId ?? null,
+          event.causationId ?? null,
         );
       }
       await stmt.finalize();
       await db.exec('COMMIT');
     } catch (error) {
       await db.exec('ROLLBACK');
+      if (error instanceof Error && error.message.includes('UNIQUE constraint failed')) {
+        throw new VersionConflictError(aggregateId);
+      }
       throw error;
     }
   };
@@ -58,6 +66,8 @@ export const createSqliteEventStore = async (dbFilePath: string = './events.db')
       version: row.version,
       timestamp: new Date(row.timestamp),
       payload: JSON.parse(row.payload),
+      ...(row.correlation_id != null && { correlationId: row.correlation_id }),
+      ...(row.causation_id != null && { causationId: row.causation_id }),
     }));
   };
 

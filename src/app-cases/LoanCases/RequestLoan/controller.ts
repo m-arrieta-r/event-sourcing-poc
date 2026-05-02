@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { Context } from 'hono';
 import { requestLoanProcess } from './app-rules';
 import { LoanProposalRepository, parseCustomerInfo } from '../../../domain/LoanProposal';
@@ -19,11 +20,12 @@ export const createRequestLoanController = (repo: LoanProposalRepository) => {
         return c.json({ success: false, error: 'requestedAmount and installments must be numbers' }, 400);
       }
 
+      const correlationId = c.req.header('x-correlation-id') ?? randomUUID();
       const result = await handleRequestLoan({
         customer: customerResult.value,
         requestedAmount: reqBody.requestedAmount,
         installments: reqBody.installments,
-      });
+      }, correlationId);
 
       if (result.isSuccess) {
         return c.json({ success: true, message: 'Loan requested successfully' }, 201);

@@ -1,20 +1,42 @@
 import { EventStore } from '../shared/EventStore';
 import { Result, success, failure } from '../shared/result';
 import { DomainEvent } from '../shared/message';
+import { VersionConflictError } from '../shared/errors';
 import { LoanProposalEvent } from '../domain/LoanProposal/events';
 import { LoanProposalState, apply } from '../domain/LoanProposal/aggregate';
-import { LoanProposalRepository } from '../domain/LoanProposal/repository';
+import { LoanProposalRepository, CommandMetadata } from '../domain/LoanProposal/repository';
 
-const KNOWN_EVENT_NAMES = new Set<string>(['LoanRequested', 'LoanApproved', 'LoanRejected']);
+const assertString = (value: unknown, field: string): void => {
+  if (typeof value !== 'string' || value.trim() === '') {
+    throw new Error(`Invalid payload: "${field}" must be a non-empty string`);
+  }
+};
 
-/**
- * Validates that a raw DomainEvent from the store is a known LoanProposalEvent.
- * Throws if the event name is unrecognised, preventing silent deserialization corruption.
- */
+const assertNumber = (value: unknown, field: string): void => {
+  if (typeof value !== 'number' || !isFinite(value)) {
+    throw new Error(`Invalid payload: "${field}" must be a finite number`);
+  }
+};
+
+const validatePayload: Record<string, (payload: any) => void> = {
+  LoanRequested: (p) => {
+    assertString(p?.customer?.id, 'customer.id');
+    assertString(p?.customer?.name, 'customer.name');
+    assertString(p?.customer?.cpf, 'customer.cpf');
+    assertNumber(p?.customer?.monthlyIncome, 'customer.monthlyIncome');
+    assertNumber(p?.requestedAmount, 'requestedAmount');
+    assertNumber(p?.installments, 'installments');
+  },
+  LoanApproved: (_p) => {},
+  LoanRejected: (_p) => {},
+};
+
 const deserializeLoanProposalEvent = (raw: DomainEvent<any, any>): LoanProposalEvent => {
-  if (!KNOWN_EVENT_NAMES.has(raw.name)) {
+  const validator = validatePayload[raw.name];
+  if (!validator) {
     throw new Error(`Unknown LoanProposal event type encountered in store: "${raw.name}"`);
   }
+  validator(raw.payload);
   return raw as LoanProposalEvent;
 };
 
@@ -39,7 +61,8 @@ export const createLoanProposalRepository = (eventStore: EventStore): LoanPropos
 
   const execute = async (
     id: string | null,
-    process: (state: LoanProposalState) => Result<LoanProposalEvent[], string>
+    process: (state: LoanProposalState) => Result<LoanProposalEvent[], string>,
+    metadata?: CommandMetadata
   ): Promise<Result<void, string>> => {
     const state = id ? await load(id) : null;
     const result = process(state);
@@ -48,7 +71,19 @@ export const createLoanProposalRepository = (eventStore: EventStore): LoanPropos
       const events = result.value;
       if (events.length > 0) {
         const aggregateId = id || events[0].aggregateId;
-        await eventStore.append(aggregateId, events);
+        const stamped = events.map(e => ({
+          ...e,
+          ...(metadata?.correlationId != null && { correlationId: metadata.correlationId }),
+          ...(metadata?.causationId != null && { causationId: metadata.causationId }),
+        }));
+        try {
+          await eventStore.append(aggregateId, stamped);
+        } catch (error) {
+          if (error instanceof VersionConflictError) {
+            return failure('version_conflict');
+          }
+          throw error;
+        }
       }
       return success(undefined);
     }

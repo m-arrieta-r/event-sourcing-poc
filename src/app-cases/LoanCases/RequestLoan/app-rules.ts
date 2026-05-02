@@ -7,11 +7,8 @@ export type RequestLoanInput = {
   installments: number;
 };
 
-// Use case logic curried with the repo dependency
-export const requestLoanProcess = (repo: LoanProposalRepository) => 
-  async (input: RequestLoanInput): Promise<Result<void, string>> => {
-    
-    // 1. Build the command
+export const requestLoanProcess = (repo: LoanProposalRepository) =>
+  async (input: RequestLoanInput, correlationId?: string): Promise<Result<void, string>> => {
     const command: RequestLoan.Command = {
       name: 'RequestLoan',
       payload: {
@@ -21,7 +18,5 @@ export const requestLoanProcess = (repo: LoanProposalRepository) =>
       }
     };
 
-    // 2. Use the repo to validate against state and append new events.
-    // Pass `null` for id since this is a creation command.
-    return repo.execute(null, (state) => RequestLoan.decide(command, state));
+    return repo.execute(null, (state) => RequestLoan.decide(command, state), { correlationId });
   };
