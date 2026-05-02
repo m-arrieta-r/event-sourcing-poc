@@ -6,16 +6,37 @@ import { LoanProposalEvent } from '../domain/LoanProposal/events';
 import { LoanProposalState, apply } from '../domain/LoanProposal/aggregate';
 import { LoanProposalRepository } from '../domain/LoanProposal/repository';
 
-const KNOWN_EVENT_NAMES = new Set<string>(['LoanRequested', 'LoanApproved', 'LoanRejected']);
+const assertString = (value: unknown, field: string): void => {
+  if (typeof value !== 'string' || value.trim() === '') {
+    throw new Error(`Invalid payload: "${field}" must be a non-empty string`);
+  }
+};
 
-/**
- * Validates that a raw DomainEvent from the store is a known LoanProposalEvent.
- * Throws if the event name is unrecognised, preventing silent deserialization corruption.
- */
+const assertNumber = (value: unknown, field: string): void => {
+  if (typeof value !== 'number' || !isFinite(value)) {
+    throw new Error(`Invalid payload: "${field}" must be a finite number`);
+  }
+};
+
+const validatePayload: Record<string, (payload: any) => void> = {
+  LoanRequested: (p) => {
+    assertString(p?.customer?.id, 'customer.id');
+    assertString(p?.customer?.name, 'customer.name');
+    assertString(p?.customer?.cpf, 'customer.cpf');
+    assertNumber(p?.customer?.monthlyIncome, 'customer.monthlyIncome');
+    assertNumber(p?.requestedAmount, 'requestedAmount');
+    assertNumber(p?.installments, 'installments');
+  },
+  LoanApproved: (_p) => {},
+  LoanRejected: (_p) => {},
+};
+
 const deserializeLoanProposalEvent = (raw: DomainEvent<any, any>): LoanProposalEvent => {
-  if (!KNOWN_EVENT_NAMES.has(raw.name)) {
+  const validator = validatePayload[raw.name];
+  if (!validator) {
     throw new Error(`Unknown LoanProposal event type encountered in store: "${raw.name}"`);
   }
+  validator(raw.payload);
   return raw as LoanProposalEvent;
 };
 
