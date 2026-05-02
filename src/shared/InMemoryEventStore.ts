@@ -11,6 +11,12 @@ export const createInMemoryEventStore = (): EventStore => {
   return {
     append: async (aggregateId: string, newEvents: DomainEvent<any, any>[]): Promise<void> => {
       const currentEvents = eventsStore[aggregateId] || [];
+      const existingVersions = new Set(currentEvents.map(e => e.version));
+      for (const event of newEvents) {
+        if (existingVersions.has(event.version)) {
+          throw new Error(`Version conflict: version ${event.version} already exists for aggregate "${aggregateId}"`);
+        }
+      }
       eventsStore[aggregateId] = [...currentEvents, ...newEvents];
     },
     
