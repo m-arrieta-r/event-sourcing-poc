@@ -2,6 +2,7 @@ import sqlite3 from 'sqlite3';
 import { open } from 'sqlite';
 import { EventStore } from '../../shared/EventStore';
 import { DomainEvent } from '../../shared/message';
+import { VersionConflictError } from '../../shared/errors';
 
 export const createSqliteEventStore = async (dbFilePath: string = './events.db'): Promise<EventStore> => {
   const db = await open({
@@ -43,6 +44,9 @@ export const createSqliteEventStore = async (dbFilePath: string = './events.db')
       await db.exec('COMMIT');
     } catch (error) {
       await db.exec('ROLLBACK');
+      if (error instanceof Error && error.message.includes('UNIQUE constraint failed')) {
+        throw new VersionConflictError(aggregateId);
+      }
       throw error;
     }
   };

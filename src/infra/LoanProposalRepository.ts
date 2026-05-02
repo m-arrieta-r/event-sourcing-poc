@@ -1,6 +1,7 @@
 import { EventStore } from '../shared/EventStore';
 import { Result, success, failure } from '../shared/result';
 import { DomainEvent } from '../shared/message';
+import { VersionConflictError } from '../shared/errors';
 import { LoanProposalEvent } from '../domain/LoanProposal/events';
 import { LoanProposalState, apply } from '../domain/LoanProposal/aggregate';
 import { LoanProposalRepository } from '../domain/LoanProposal/repository';
@@ -48,7 +49,14 @@ export const createLoanProposalRepository = (eventStore: EventStore): LoanPropos
       const events = result.value;
       if (events.length > 0) {
         const aggregateId = id || events[0].aggregateId;
-        await eventStore.append(aggregateId, events);
+        try {
+          await eventStore.append(aggregateId, events);
+        } catch (error) {
+          if (error instanceof VersionConflictError) {
+            return failure('version_conflict');
+          }
+          throw error;
+        }
       }
       return success(undefined);
     }
