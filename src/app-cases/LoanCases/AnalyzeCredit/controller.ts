@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { Context } from 'hono';
 import { analyzeCreditProcess } from './app-rules';
 import { LoanProposalRepository } from '../../../domain/LoanProposal';
@@ -12,7 +13,8 @@ export const createAnalyzeCreditController = (repo: LoanProposalRepository) => {
          return c.json({ success: false, error: 'proposalId is required' }, 400);
       }
 
-      const result = await handleAnalyzeCredit(reqBody.proposalId);
+      const correlationId = c.req.header('x-correlation-id') ?? randomUUID();
+      const result = await handleAnalyzeCredit(reqBody.proposalId, correlationId);
       if (result.isSuccess) {
         return c.json({ success: true, message: 'Credit analyzed successfully' }, 200);
       }

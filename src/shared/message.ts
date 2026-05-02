@@ -9,4 +9,6 @@ export interface DomainEvent<TName extends string, TPayload> {
   version: number;
   timestamp: Date;
   payload: TPayload;
+  correlationId?: string;
+  causationId?: string;
 }

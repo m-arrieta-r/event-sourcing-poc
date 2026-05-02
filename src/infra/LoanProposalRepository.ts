@@ -4,7 +4,7 @@ import { DomainEvent } from '../shared/message';
 import { VersionConflictError } from '../shared/errors';
 import { LoanProposalEvent } from '../domain/LoanProposal/events';
 import { LoanProposalState, apply } from '../domain/LoanProposal/aggregate';
-import { LoanProposalRepository } from '../domain/LoanProposal/repository';
+import { LoanProposalRepository, CommandMetadata } from '../domain/LoanProposal/repository';
 
 const assertString = (value: unknown, field: string): void => {
   if (typeof value !== 'string' || value.trim() === '') {
@@ -61,7 +61,8 @@ export const createLoanProposalRepository = (eventStore: EventStore): LoanPropos
 
   const execute = async (
     id: string | null,
-    process: (state: LoanProposalState) => Result<LoanProposalEvent[], string>
+    process: (state: LoanProposalState) => Result<LoanProposalEvent[], string>,
+    metadata?: CommandMetadata
   ): Promise<Result<void, string>> => {
     const state = id ? await load(id) : null;
     const result = process(state);
@@ -70,8 +71,13 @@ export const createLoanProposalRepository = (eventStore: EventStore): LoanPropos
       const events = result.value;
       if (events.length > 0) {
         const aggregateId = id || events[0].aggregateId;
+        const stamped = events.map(e => ({
+          ...e,
+          ...(metadata?.correlationId != null && { correlationId: metadata.correlationId }),
+          ...(metadata?.causationId != null && { causationId: metadata.causationId }),
+        }));
         try {
-          await eventStore.append(aggregateId, events);
+          await eventStore.append(aggregateId, stamped);
         } catch (error) {
           if (error instanceof VersionConflictError) {
             return failure('version_conflict');
